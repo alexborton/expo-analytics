@@ -7,6 +7,23 @@ const { width, height } = Dimensions.get('window');
 
 let defaultOptions = { debug: false };
 
+let webViewUserAgent = null;
+const getWebViewUserAgent = async (options) => {
+    return new Promise((resolve) => {
+        if (options.userAgent) {
+            webViewUserAgent = options.userAgent;
+            return resolve(options.userAgent);
+        }
+        if (webViewUserAgent) return resolve(webViewUserAgent);
+        Constants.getWebiewUserAgentAsync()
+          .then(userAgent => {
+              webViewUserAgent = userAgent;
+              resolve(userAgent);
+          })
+          .catch(() => resolve('unknown user agent'))
+    });
+}
+
 export default class Analytics {
     customDimensions = []
     customMetrics = []
@@ -16,13 +33,13 @@ export default class Analytics {
         this.options = options;
         this.clientId = Constants.deviceId;
 
-        this.promiseGetWebViewUserAgentAsync = Constants.getWebViewUserAgentAsync()
+        this.promiseGetWebViewUserAgentAsync = getWebViewUserAgent(options)
             .then(userAgent => {
                 this.userAgent = userAgent;
 
-                this.parameters = { 
-                    an: Constants.manifest.name, 
-                    aid: Constants.manifest.slug, 
+                this.parameters = {
+                    an: Constants.manifest.name,
+                    aid: Constants.manifest.slug,
                     av: Constants.manifest.version,
                     sr: `${width}x${height}`,
                     ...additionalParameters
@@ -84,13 +101,13 @@ export default class Analytics {
         * &cd{n}= custom dimensions
         * &cm{n}= custom metrics
         * &z= cache buster (prevent browsers from caching GET requests -- should always be last)
-        * 
+        *
         * Ecommerce track support (transaction)
         * &ti= transaction The transaction ID. (e.g. 1234)
         * &ta= The store or affiliation from which this transaction occurred (e.g. Acme Clothing).
         * &tr= Specifies the total revenue or grand total associated with the transaction (e.g. 11.99). This value may include shipping, tax costs, or other adjustments to total revenue that you want to include as part of your revenue calculations.
         * &tt= Specifies the total shipping cost of the transaction. (e.g. 5)
-        * 
+        *
         * Ecommerce track support (addItem)
         * &ti= transaction The transaction ID. (e.g. 1234)
         * &in= The item name. (e.g. Fluffy Pink Bunnies)
